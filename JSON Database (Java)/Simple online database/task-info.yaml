@@ -1,0 +1,332 @@
+type: edu
+files:
+- name: src/client/Main.java
+  visible: true
+  text: |
+    package client;
+
+    public class Main {
+
+        public static void main(String[] args) {
+            System.out.println("Hello, world!");
+        }
+    }
+  learner_created: false
+- name: src/server/Main.java
+  visible: true
+  text: |
+    package server;
+
+    public class Main {
+
+        public static void main(String[] args) {
+            System.out.println("Hello, world!");
+        }
+    }
+  learner_created: false
+- name: test/JsonDatabaseTest.java
+  visible: false
+  text: |
+    import org.hyperskill.hstest.dynamic.DynamicTest;
+    import org.hyperskill.hstest.stage.StageTest;
+    import org.hyperskill.hstest.testcase.CheckResult;
+    import org.hyperskill.hstest.testing.TestedProgram;
+
+    public class JsonDatabaseTest extends StageTest<String> {
+
+        private static final String OK_STATUS = "OK";
+        private static final String ERROR_STATUS = "ERROR";
+
+        private static final String WRONG_EXIT = "The server should stop when client sends 'exit' request";
+        private static final String WRONG_GET_EMPTY_CELL_WITH_ERROR = "When a client tries to get an empty cell from " +
+                "the server, the server should response with 'ERROR' and the client should print that response";
+        private static final String WRONG_SET_VALUE_TO_CELL_WITH_OK = "When a client tries to save a value on" +
+                " the server, the server should save the value and response with '" + OK_STATUS + "'. The client should " +
+                "print that response";
+        private static final String WRONG_GET_VALUE = "When a client tries to get a not empty cell from the server, " +
+                "the server should response with a value of the cell. The client should pint received value.\n" +
+                "May be the problem is in processing 'set' action:\nIf the specified cell already contains " +
+                "information, you should simply rewrite it.";
+        private static final String WRONG_DELETE = "When a client tries to delete a value from the cell on the server," +
+                " the server should assign an empty string to this cell and response with '" + OK_STATUS + "'.";
+        private static final String WRONG_DELETE_EMPTY = "When a client tries to delete a cell with an empty value from the server," +
+                " the server should assign an empty string to this cell and response with '" + OK_STATUS + "'.";
+        private static final String WRONG_DELETE_INDEX_OUT_OF_BOUNDS = "When a user tries to delete a cell which index " +
+                "is less than 0 or greater than 1000, the server should response with  '" + ERROR_STATUS + "'.";
+
+        @DynamicTest(order = 1)
+        CheckResult checkExit() {
+
+            TestedProgram server = getServer();
+            server.startInBackground();
+
+            TestedProgram client = getClient();
+            client.start("-t", "exit");
+
+            try {
+                Thread.sleep(50);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            if (!server.isFinished()) {
+                server.stop();
+                return CheckResult.wrong(WRONG_EXIT);
+            }
+
+            return CheckResult.correct();
+        }
+
+        @DynamicTest(order = 2)
+        CheckResult testInputs() {
+
+            TestedProgram server = getServer();
+            server.startInBackground();
+
+            TestedProgram client;
+            String output;
+            String expectedValue;
+
+            client = getClient();
+            output = client.start("-t", "get", "-i", "1");
+            if (!output.toUpperCase().contains(ERROR_STATUS)) {
+                return CheckResult.wrong(WRONG_GET_EMPTY_CELL_WITH_ERROR);
+            }
+
+            client = getClient();
+            output = client.start("-t", "set", "-i", "1", "-m", "Hello world!");
+            if (!output.toUpperCase().contains(OK_STATUS)) {
+                return CheckResult.wrong(WRONG_SET_VALUE_TO_CELL_WITH_OK);
+            }
+
+            client = getClient();
+            output = client.start("-t", "set", "-i", "1", "-m", "HelloWorld!");
+            if (!output.toUpperCase().contains(OK_STATUS)) {
+                return CheckResult.wrong(WRONG_SET_VALUE_TO_CELL_WITH_OK);
+            }
+
+            client = getClient();
+            output = client.start("-t", "get", "-i", "1");
+            expectedValue = "HelloWorld!";
+            if (!output.contains(expectedValue)) {
+                return CheckResult.wrong(WRONG_GET_VALUE +
+                        "\nExpected:\n" + expectedValue + "\nYour output:\n" + output);
+            }
+
+            client = getClient();
+            output = client.start("-t", "delete", "-i", "1");
+            if (!output.toUpperCase().contains(OK_STATUS)) {
+                return CheckResult.wrong(WRONG_DELETE);
+            }
+
+            client = getClient();
+            output = client.start("-t", "delete", "-i", "1");
+            if (!output.toUpperCase().contains(OK_STATUS)) {
+                return CheckResult.wrong(WRONG_DELETE_EMPTY);
+            }
+
+            client = getClient();
+            output = client.start("-t", "get", "-i", "1");
+            if (!output.toUpperCase().contains(ERROR_STATUS)) {
+                return CheckResult.wrong(WRONG_GET_EMPTY_CELL_WITH_ERROR + "\nMay be after deleting a cell you didn't " +
+                        "assign an empty value to it.");
+            }
+
+            client = getClient();
+            output = client.start("-t", "set", "-i", "55", "-m", "Some text here");
+            if (!output.toUpperCase().contains(OK_STATUS)) {
+                return CheckResult.wrong(WRONG_SET_VALUE_TO_CELL_WITH_OK);
+            }
+
+            client = getClient();
+            output = client.start("-t", "get", "-i", "55");
+            expectedValue = "Some text here";
+            if (!output.contains(expectedValue)) {
+                return CheckResult.wrong(WRONG_GET_VALUE +
+                        "\nExpected:\n" + expectedValue + "\nYour output:\n" + output);
+            }
+
+            client = getClient();
+            output = client.start("-t", "get", "-i", "56");
+            if (!output.toUpperCase().contains(ERROR_STATUS)) {
+                return CheckResult.wrong(WRONG_GET_EMPTY_CELL_WITH_ERROR);
+            }
+
+            client = getClient();
+            output = client.start("-t", "delete", "-i", "55");
+            if (!output.toUpperCase().contains(OK_STATUS)) {
+                return CheckResult.wrong(WRONG_DELETE);
+            }
+
+            client = getClient();
+            output = client.start("-t", "delete", "-i", "56");
+            if (!output.toUpperCase().contains(OK_STATUS)) {
+                return CheckResult.wrong(WRONG_DELETE_EMPTY);
+            }
+
+            client = getClient();
+            output = client.start("-t", "delete", "-i", "100");
+            if (!output.toUpperCase().contains(OK_STATUS)) {
+                return CheckResult.wrong(WRONG_DELETE_EMPTY);
+            }
+
+            client = getClient();
+            output = client.start("-t", "delete", "-i", "1001");
+            if (!output.toUpperCase().contains(ERROR_STATUS)) {
+                return CheckResult.wrong(WRONG_DELETE_INDEX_OUT_OF_BOUNDS);
+            }
+
+            client = getClient();
+            client.start("-t", "exit");
+
+            return CheckResult.correct();
+        }
+
+
+        private static TestedProgram getClient() {
+            return new TestedProgram("client");
+        }
+
+        private static TestedProgram getServer() {
+            return new TestedProgram("server");
+        }
+
+        private static void stopServer() {
+            TestedProgram client = getClient();
+            client.start("-t", "exit");
+        }
+    }
+  learner_created: false
+- name: src/client/Client.java
+  visible: true
+  text: |
+    package client;
+
+    import java.io.DataInputStream;
+    import java.io.DataOutputStream;
+    import java.io.IOException;
+    import java.net.InetAddress;
+    import java.net.Socket;
+    import java.net.UnknownHostException;
+
+    public class Client {
+        private final static String ADDRESS = "127.0.0.1";
+        private static final int PORT = 23456;
+        private final static String request = "Give me a record # 12";
+
+        public static void start() {
+            try (
+                    Socket socket = new Socket(InetAddress.getByName(ADDRESS), PORT);
+                    DataInputStream input = new DataInputStream(socket.getInputStream());
+                    DataOutputStream output = new DataOutputStream(socket.getOutputStream())
+            ) {
+                System.out.println("Client started!");
+                output.writeUTF(request);
+                System.out.println("Sent: " + request);
+                System.out.println("Received: " + input.readUTF());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+  learner_created: true
+- name: src/server/Server.java
+  visible: true
+  text: |
+    package server;
+
+    import java.io.DataInputStream;
+    import java.io.DataOutputStream;
+    import java.io.IOException;
+    import java.net.InetAddress;
+    import java.net.ServerSocket;
+    import java.net.Socket;
+
+    public class Server {
+        private final static String ADDRESS = "127.0.0.1";
+        private static final int PORT = 23456;
+        private final static String answer = "A record # 12 was sent!";
+
+        public static void start() {
+            try (ServerSocket server = new ServerSocket(PORT, 50, InetAddress.getByName(ADDRESS))) {
+                System.out.println("Server started!");
+                try (
+                        Socket socket = server.accept();
+                        var input = new DataInputStream(socket.getInputStream());
+                        var output = new DataOutputStream(socket.getOutputStream())
+                ) {
+                    System.out.println("Received: " + input.readUTF());
+                    output.writeUTF(answer);
+                    System.out.println("Sent: " + answer);
+                }
+
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+  learner_created: true
+- name: src/server/storage/InMemoryStorage.java
+  visible: true
+  text: |
+    package server;
+
+    import java.util.ArrayList;
+
+    import static server.JsonDatabaseUtils.DB_SIZE;
+    import static server.JsonDatabaseUtils.INITIAL_CELL_VALUE;
+
+    public class JsonDatabase {
+        private final ArrayList<String> storage;
+
+        public JsonDatabase() {
+            storage = new ArrayList<>(DB_SIZE);
+            for (int i = 0; i < DB_SIZE; i++) {
+                storage.add(INITIAL_CELL_VALUE);
+            }
+        }
+
+        public void set(int index, String value) {
+            storage.set(index, value);
+        }
+
+        public String get(int index) {
+            return storage.get(index);
+        }
+
+        public void delete(int index) {
+            storage.set(index, INITIAL_CELL_VALUE);
+        }
+    }
+  learner_created: true
+- name: src/server/storage/StorageUtils.java
+  visible: true
+  text: |
+    package server;
+
+    import java.util.Scanner;
+
+    public class JsonDatabaseUtils {
+        public static final String INITIAL_CELL_VALUE = "";
+        public static final int DB_SIZE = 100;
+        public static final Scanner SCANNER = new Scanner(System.in);
+    }
+  learner_created: true
+- name: src/server/storage/Storage.java
+  visible: true
+  learner_created: true
+- name: src/server/operation/StorageOperation.java
+  visible: true
+  learner_created: true
+- name: src/server/operation/SetStorageOperation.java
+  visible: true
+  learner_created: true
+- name: src/server/operation/GetStorageOperation.java
+  visible: true
+  learner_created: true
+- name: src/server/operation/DeleteStorageOperation.java
+  visible: true
+  learner_created: true
+feedback_link: https://hyperskill.org/learn/step/5492#comment
+status: Unchecked
+record: -1
