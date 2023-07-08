@@ -1,8 +1,96 @@
 [1;31m
-Start test 1[0m
-Server started!
-Client started!
-Sent: Give me a record # 12
- Received: Give me a record # 12
-Sent: A record # 12 was sent!
-"Received: A record # 12 was sent!
+Start test 1[0m
+Server started!
+Client started!
+Sent: exit
+Received: exit
+
+Sent: OK
+Received: OK
+[1;31m
+Start test 2[0m
+Server started!
+Client started!
+Sent: get 1
+Received: get 1
+Sent: ERROR
+Received: ERROR
+Client started!
+Received: set 1 Hello world!
+Sent: set 1 Hello world!
+
+Sent: OK
+Received: OK
+Client started!
+Received: set 1 HelloWorld!
+Sent: set 1 HelloWorld!
+
+Sent: OK
+Received: OK
+Client started!
+Received: get 1
+Sent: get 1
+Sent: HelloWorld!
+Received: HelloWorld!
+Client started!
+Received: delete 1
+Sent: delete 1
+
+Sent: OK
+Received: OK
+Client started!
+Received: delete 1
+Sent: delete 1
+
+Sent: OK
+Received: OK
+Client started!
+Received: get 1
+Sent: get 1
+Sent: ERROR
+Received: ERROR
+Client started!
+!Received: set 55 Some text here
+Sent: set 55 Some text here
+
+Sent: OK
+Received: OK
+Client started!
+Received: get 55
+Sent: get 55
+Sent: Some text here
+Received: Some text here
+Client started!
+Received: get 56
+Sent: get 56
+Sent: ERROR
+Received: ERROR
+Client started!
+Received: delete 55
+Sent: delete 55
+
+Sent: OK
+Received: OK
+Client started!
+Received: delete 56
+Sent: delete 56
+
+Sent: OK
+Received: OK
+Client started!
+Received: delete 100
+Sent: delete 100
+
+Sent: OK
+Received: OK
+Client started!
+Received: delete 1001
+Sent: delete 1001
+Sent: ERROR
+Received: ERROR
+Client started!
+Received: exit
+Sent: exit
+
+Sent: OK
+Received: OK

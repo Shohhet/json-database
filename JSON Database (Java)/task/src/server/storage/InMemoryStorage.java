@@ -3,8 +3,8 @@ package server.storage;
 import java.util.Arrays;
 import java.util.Objects;
 
-import static server.storage.StorageUtils.STORAGE_SIZE;
-import static server.storage.StorageUtils.EMPTY_CELL_VALUE;
+import static server.storage.InMemoryStorageUtils.STORAGE_SIZE;
+import static server.storage.InMemoryStorageUtils.EMPTY_CELL_VALUE;
 
 public class InMemoryStorage implements Storage{
     private final String[] storage;
@@ -34,7 +34,7 @@ public class InMemoryStorage implements Storage{
     @Override
     public boolean delete(int index) {
         if (isCorrectIndex(index)) {
-            storage[index] = EMPTY_CELL_VALUE;
+            storage[index - 1] = EMPTY_CELL_VALUE;
             return true;
         } else {
             return false;

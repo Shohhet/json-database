@@ -299,7 +299,34 @@ files:
         }
     }
   learner_created: true
-- name: src/server/storage/StorageUtils.java
+- name: src/server/storage/Storage.java
+  visible: true
+  learner_created: true
+- name: src/server/RequestHandler.java
+  visible: true
+  learner_created: true
+- name: src/server/command/Command.java
+  visible: true
+  learner_created: true
+- name: src/server/command/GetCommand.java
+  visible: true
+  learner_created: true
+- name: src/server/command/DeleteCommand.java
+  visible: true
+  learner_created: true
+- name: src/server/command/SetCommand.java
+  visible: true
+  learner_created: true
+- name: src/server/command/WrongCommand.java
+  visible: true
+  learner_created: true
+- name: src/server/command/ExitCommand.java
+  visible: true
+  learner_created: true
+- name: src/server/command/CommandResolver.java
+  visible: true
+  learner_created: true
+- name: src/server/storage/InMemoryStorageUtils.java
   visible: true
   text: |
     package server;
@@ -312,21 +339,12 @@ files:
         public static final Scanner SCANNER = new Scanner(System.in);
     }
   learner_created: true
-- name: src/server/storage/Storage.java
-  visible: true
-  learner_created: true
-- name: src/server/operation/StorageOperation.java
-  visible: true
-  learner_created: true
-- name: src/server/operation/SetStorageOperation.java
-  visible: true
-  learner_created: true
-- name: src/server/operation/GetStorageOperation.java
-  visible: true
-  learner_created: true
-- name: src/server/operation/DeleteStorageOperation.java
+- name: src/client/Args.java
   visible: true
   learner_created: true
 feedback_link: https://hyperskill.org/learn/step/5492#comment
-status: Unchecked
+status: Solved
+feedback:
+  message: Congratulations!
+  time: "Sat, 08 Jul 2023 08:08:05 UTC"
 record: -1
