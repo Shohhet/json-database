@@ -15,7 +15,7 @@ public class RequestHandler {
     }
 
     public String handle(String request) {
-        return commandResolver.resolveCommand(request).execute();
+        return commandResolver.resolve(request).execute();
 
     }
 

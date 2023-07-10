@@ -9,7 +9,7 @@ public class CommandResolver {
         this.requestHandler = requestHandler;
     }
 
-    public Command resolveCommand(String request) {
+    public Command resolve(String request) {
         Command command = new WrongCommand();
         if (request == null) {
             return command;

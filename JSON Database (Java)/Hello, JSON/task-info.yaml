@@ -391,6 +391,397 @@ files:
         }
     }
   learner_created: false
+- name: src/server/command/CommandResolver.java
+  visible: true
+  text: |
+    package server.command;
+
+    import server.RequestHandler;
+
+    public class CommandResolver {
+        private final RequestHandler requestHandler;
+
+        public CommandResolver(RequestHandler requestHandler) {
+            this.requestHandler = requestHandler;
+        }
+
+        public Command resolve(String request) {
+            Command command = new WrongCommand();
+            if (request == null) {
+                return command;
+            }
+
+            String[] requestParts = request.split("\\s+", 2);
+            switch (requestParts[0]) {
+                case "get" -> {
+                    try {
+                        int index = Integer.parseInt(requestParts[1]);
+                        command = new GetCommand(requestHandler.getStorage(), index);
+                    } catch (NumberFormatException e) {
+                        command = new WrongCommand();
+                    }
+                }
+                case "set" -> {
+                    String[] setRequestParts = requestParts[1].split("\\s+", 2);
+                    if (setRequestParts.length > 1) {
+                        try {
+                            int index = Integer.parseInt(setRequestParts[0]);
+                            command = new SetCommand(requestHandler.getStorage(), index, setRequestParts[1]);
+                        } catch (NumberFormatException e) {
+                            command = new WrongCommand();
+                        }
+                    }
+                }
+                case "delete" -> {
+                    try {
+                        int index = Integer.parseInt(requestParts[1]);
+                        command = new DeleteCommand(requestHandler.getStorage(), index);
+                    } catch (NumberFormatException e) {
+                        command = new WrongCommand();
+                    }
+                }
+                case "exit" -> {
+                    if (requestParts.length == 1) {
+                        command = new ExitCommand(requestHandler);
+                    }
+                }
+            }
+            return command;
+        }
+
+    }
+  learner_created: true
+- name: src/client/Client.java
+  visible: true
+  text: |
+    package client;
+
+    import java.io.DataInputStream;
+    import java.io.DataOutputStream;
+    import java.io.IOException;
+    import java.net.InetAddress;
+    import java.net.Socket;
+    import java.net.UnknownHostException;
+    import java.util.Scanner;
+
+    public class Client {
+        private final static String ADDRESS = "127.0.0.1";
+        private static final int PORT = 23456;
+
+        private static final Scanner scanner = new Scanner(System.in);
+
+        public static void start(String request) {
+            try (
+                    Socket socket = new Socket(InetAddress.getByName(ADDRESS), PORT);
+                    DataInputStream input = new DataInputStream(socket.getInputStream());
+                    DataOutputStream output = new DataOutputStream(socket.getOutputStream())
+            ) {
+                System.out.println("Client started!");
+                output.writeUTF(request);
+                System.out.println("Sent: " + request);
+                System.out.println("Received: " + input.readUTF());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+  learner_created: true
+- name: src/server/storage/Storage.java
+  visible: true
+  text: |
+    package server.storage;
+
+    public interface Storage {
+        boolean set(int index, String value);
+        String get(int index);
+        boolean delete(int index);
+    }
+  learner_created: true
+- name: src/server/Server.java
+  visible: true
+  text: |
+    package server;
+
+    import java.io.DataInputStream;
+    import java.io.DataOutputStream;
+    import java.io.IOException;
+    import java.net.InetAddress;
+    import java.net.ServerSocket;
+    import java.net.Socket;
+
+    public class Server {
+        private final String address;
+        private final int port;
+        private final int maxAmountOfClients;
+        private final RequestHandler requestHandler;
+
+        public Server(String address, int port, int maxAmountOfClients, RequestHandler requestHandler) {
+            this.address = address;
+            this.port = port;
+            this.maxAmountOfClients = maxAmountOfClients;
+            this.requestHandler = requestHandler;
+        }
+
+        public void start() {
+            try (ServerSocket server = new ServerSocket(port, maxAmountOfClients, InetAddress.getByName(address))) {
+                System.out.println("Server started!");
+
+                while (requestHandler.isServerOnline()) {
+                    try (
+                            Socket socket = server.accept();
+                            var input = new DataInputStream(socket.getInputStream());
+                            var output = new DataOutputStream(socket.getOutputStream())
+                    ) {
+                            String request = input.readUTF();
+                            System.out.println("Received: " + request);
+                            String response = requestHandler.handle(request);
+                            output.writeUTF(response);
+                            System.out.println("Sent: " + response);
+                    }
+                }
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+    }
+  learner_created: true
+- name: src/server/command/WrongCommand.java
+  visible: true
+  text: |
+    package server.command;
+
+    public class WrongCommand implements Command {
+        @Override
+        public String execute() {
+            return "ERROR";
+        }
+    }
+  learner_created: true
+- name: src/server/storage/InMemoryStorage.java
+  visible: true
+  text: |
+    package server.storage;
+
+    import java.util.Arrays;
+    import java.util.Objects;
+
+    import static server.storage.InMemoryStorageUtils.STORAGE_SIZE;
+    import static server.storage.InMemoryStorageUtils.EMPTY_CELL_VALUE;
+
+    public class InMemoryStorage implements Storage{
+        private final String[] storage;
+
+        public InMemoryStorage() {
+            storage = new String[STORAGE_SIZE];
+            Arrays.fill(storage, EMPTY_CELL_VALUE);
+        }
+
+        @Override
+        public boolean set(int index, String value) {
+            if (isCorrectIndex(index) && isCorrectValue(value)) {
+                storage[index - 1] = value;
+                return true;
+            } else {
+                return false;
+            }
+        }
+        @Override
+        public String get(int index) {
+            if (isCorrectIndex(index)) {
+                return storage[index - 1];
+            } else {
+                return EMPTY_CELL_VALUE;
+            }
+        }
+        @Override
+        public boolean delete(int index) {
+            if (isCorrectIndex(index)) {
+                storage[index - 1] = EMPTY_CELL_VALUE;
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        private boolean isCorrectIndex(int index) {
+            return index > 0 && index <= STORAGE_SIZE;
+        }
+
+        private boolean isCorrectValue(String value) {
+            return Objects.nonNull(value) && !value.isEmpty();
+        }
+
+    }
+  learner_created: true
+- name: src/server/command/Command.java
+  visible: true
+  text: |
+    package server.command;
+
+    public interface Command {
+        String execute();
+    }
+  learner_created: true
+- name: src/server/command/SetCommand.java
+  visible: true
+  text: |
+    package server.command;
+
+    import server.storage.Storage;
+
+    public class SetCommand implements Command {
+        private final Storage storage;
+        private final int index;
+        private final String value;
+
+        public SetCommand(Storage storage, int index, String value) {
+            this.storage = storage;
+            this.index = index;
+            this.value = value;
+        }
+
+        @Override
+        public String execute() {
+            return storage.set(index, value) ? "OK" : "ERROR";
+        }
+    }
+  learner_created: true
+- name: src/server/RequestHandler.java
+  visible: true
+  text: |
+    package server;
+
+    import server.command.*;
+    import server.storage.Storage;
+
+    public class RequestHandler {
+        private final Storage storage;
+        private final CommandResolver commandResolver;
+        private boolean serverOnline;
+
+        public RequestHandler(Storage storage) {
+            this.storage = storage;
+            this.serverOnline = true;
+            commandResolver = new CommandResolver(this);
+        }
+
+        public String handle(String request) {
+            return commandResolver.resolve(request).execute();
+
+        }
+
+        public Storage getStorage() {
+            return storage;
+        }
+        public boolean isServerOnline () {
+            return this.serverOnline;
+        }
+
+        public void shutdownServer() {
+            this.serverOnline = false;
+        }
+    }
+  learner_created: true
+- name: src/server/command/ExitCommand.java
+  visible: true
+  text: |
+    package server.command;
+
+    import server.RequestHandler;
+
+    public class ExitCommand implements Command {
+        private final RequestHandler requestHandler;
+        public ExitCommand(RequestHandler requestHandler) {
+            this.requestHandler = requestHandler;
+        }
+
+        @Override
+        public String execute() {
+            requestHandler.shutdownServer();
+            return "OK";
+        }
+    }
+  learner_created: true
+- name: src/server/storage/InMemoryStorageUtils.java
+  visible: true
+  text: |
+    package server.storage;
+
+    public class InMemoryStorageUtils {
+        public static final String EMPTY_CELL_VALUE = "";
+        public static final int STORAGE_SIZE = 1000;
+    }
+  learner_created: true
+- name: src/client/Args.java
+  visible: true
+  text: |-
+    package client;
+
+    import com.beust.jcommander.Parameter;
+
+    public class Args {
+        @Parameter(names = "-t")
+        private String requestType;
+        @Parameter(names =  "-i")
+        private Integer index;
+        @Parameter(names = "-m")
+        private String message;
+
+        public String resolve() {
+            return requestType +
+                    (index == null ? "" : " " + index) +
+                    (message == null ? "" : " " + message);
+        }
+
+    }
+  learner_created: true
+- name: src/server/command/GetCommand.java
+  visible: true
+  text: |
+    package server.command;
+
+    import server.storage.Storage;
+
+    public class GetCommand implements Command {
+        private final Storage storage;
+        private final int index;
+
+        public GetCommand(Storage storage, int index) {
+            this.storage = storage;
+            this.index = index;
+        }
+
+        @Override
+        public String execute() {
+            String value = storage.get(index);
+            return value.isEmpty() ? "ERROR" : value;
+        }
+    }
+  learner_created: true
+- name: src/server/command/DeleteCommand.java
+  visible: true
+  text: |
+    package server.command;
+
+    import server.storage.Storage;
+
+    public class DeleteCommand implements Command {
+        private final Storage storage;
+        private final int index;
+
+        public DeleteCommand(Storage storage, int index) {
+            this.storage = storage;
+            this.index = index;
+        }
+
+        @Override
+        public String execute() {
+            return storage.delete(index) ? "OK" : "ERROR";
+        }
+    }
+  learner_created: true
 feedback_link: https://hyperskill.org/learn/step/5493#comment
 status: Unchecked
 record: -1
